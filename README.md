@@ -11,6 +11,8 @@ Interfaz HTML sencilla para abrir desde Opera Mini en el LG P350f. Vercel sirve 
 3. Despliega de nuevo.
 4. Abre el dominio de Vercel desde Opera Mini y envía un mensaje de prueba.
 
+Al abrir la página, se consultan automáticamente las últimas 50 actualizaciones con `GET /agent/v1/updates?limit=50&timeout=15`. El token permanece en el servidor y la página llama a `/api/updates`; también puedes volver a cargar la lista con **Actualizar**.
+
 La función envía `POST` JSON con el formato de WhatsApp Agent:
 
 ```json

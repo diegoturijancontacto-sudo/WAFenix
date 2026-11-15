@@ -13,6 +13,7 @@
     input,textarea{box-sizing:border-box;width:100%;font:16px Arial,sans-serif;padding:12px;border:1px solid #aebfb7;border-radius:5px;background:#fff;color:#18332b}
     textarea{height:120px;resize:vertical}button{margin-top:18px;background:#087e58;color:white;border:0;border-radius:5px;padding:13px 18px;font-size:16px;font-weight:bold;width:100%;cursor:pointer}
     button:disabled{background:#78958a}.hint{font-size:13px;color:#64766e;line-height:1.5}.status{padding:12px;margin-top:14px;border-radius:5px;display:none;line-height:1.4}.ok{display:block;background:#e4f5eb;color:#185c37}.error{display:block;background:#fff0ed;color:#8c2e21}
+    .updates{margin-top:26px;border-top:1px solid #d8e5df;padding-top:18px}.updates-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.updates h2{font-size:19px;margin:0}.updates button{width:auto;margin:0;padding:9px 12px;font-size:14px}.updates-state{color:#64766e;font-size:14px;margin:12px 0}.update-item{border:1px solid #d8e5df;border-radius:6px;padding:12px;margin-top:10px}.update-item strong{display:block;margin-bottom:6px}.update-item pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px monospace;margin:0;color:#526860}
   </style>
 </head>
 <body><div class="wrap"><main class="card">
@@ -27,11 +28,36 @@
     <button id="submit" type="submit">Enviar mensaje</button>
     <div id="status" class="status" role="status"></div>
   </form>
+  <section class="updates" aria-labelledby="updates-title">
+    <div class="updates-head"><h2 id="updates-title">Actualizaciones recientes</h2><button id="refresh-updates" type="button">Actualizar</button></div>
+    <p id="updates-state" class="updates-state" role="status">Cargando mensajes…</p>
+    <div id="updates-list" aria-live="polite"></div>
+  </section>
 </main></div>
 <script>
 (function(){
  var form=document.getElementById('send-form'), button=document.getElementById('submit'), status=document.getElementById('status');
- function show(text,kind){status.className='status '+kind;status.innerHTML=text;}
+ var updatesState=document.getElementById('updates-state'), updatesList=document.getElementById('updates-list'), refreshButton=document.getElementById('refresh-updates');
+ function show(text,kind){status.className='status '+kind;status.textContent=text;}
+ function loadUpdates(){
+   refreshButton.disabled=true;updatesState.textContent='Cargando mensajes…';
+   var xhr=new XMLHttpRequest();xhr.open('GET','/api/updates',true);
+   xhr.onreadystatechange=function(){if(xhr.readyState!==4)return;refreshButton.disabled=false;var data={};try{data=JSON.parse(xhr.responseText);}catch(ignore){}
+     if(xhr.status<200||xhr.status>=300){updatesState.textContent=data.error||'No se pudieron cargar los mensajes.';return;}
+     var items=Array.isArray(data)?data:(data.updates||data.messages||data.data||[]);
+     if(!Array.isArray(items)){items=[items];}
+     updatesList.textContent='';
+     if(!items.length){updatesState.textContent='No hay mensajes recientes.';return;}
+     updatesState.textContent=items.length+' actualización'+(items.length===1?'':'es')+'.';
+     items.forEach(function(item,index){var article=document.createElement('article');article.className='update-item';var title=document.createElement('strong');
+       var kind=(item&& (item.type||item.event||item.status))||('Actualización '+(index+1));title.textContent=String(kind);
+       var details=document.createElement('pre');details.textContent=JSON.stringify(item,null,2);article.appendChild(title);article.appendChild(details);updatesList.appendChild(article);
+     });
+   };
+   xhr.onerror=function(){refreshButton.disabled=false;updatesState.textContent='No se pudieron cargar los mensajes. Comprueba la conexión e inténtalo de nuevo.';};xhr.send();
+ }
+ refreshButton.onclick=loadUpdates;
+ loadUpdates();
  form.onsubmit=function(e){
    if(e&&e.preventDefault)e.preventDefault();
    var to=document.getElementById('to').value.trim(), message=document.getElementById('message').value;
