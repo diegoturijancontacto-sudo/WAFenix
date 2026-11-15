@@ -6,18 +6,18 @@ Interfaz HTML sencilla para abrir desde Opera Mini en el LG P350f. Vercel sirve 
 
 1. Importa este repositorio en Vercel.
 2. En **Project Settings → Environment Variables**, agrega:
-   - `WHATSAPP_API_URL`: URL HTTPS del endpoint de tu API que recibe envíos.
+   - `WHATSAPP_API_URL`: `https://api.whatsapp.com/agent/v1/messages`.
    - `WHATSAPP_API_KEY`: clave de API usada como `Authorization: Bearer <clave>`.
 3. Despliega de nuevo.
 4. Abre el dominio de Vercel desde Opera Mini y envía un mensaje de prueba.
 
-El endpoint configurado debe aceptar `POST` JSON con esta forma:
+La función envía `POST` JSON con el formato de WhatsApp Agent:
 
 ```json
-{"to":"5215512345678","message":"Hola"}
+{"messaging_product":"whatsapp","to":"user:192325112357002","type":"text","text":{"body":"Hola"}}
 ```
 
-La función transmite ese mismo JSON con el encabezado `Authorization: Bearer ...`. Si tu API usa otros nombres de campo o autenticación, adapta el bloque `fetch` en `api/send.js`.
+La clave se transmite en el encabezado `Authorization: Bearer ...`. El campo `to` admite un número con código de país o un identificador `user:ID`.
 
 ## Sobre el teléfono y el manual
 

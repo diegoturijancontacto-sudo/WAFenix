@@ -17,11 +17,11 @@
 </head>
 <body><div class="wrap"><main class="card">
   <h1>Enviar por WhatsApp</h1>
-  <p class="intro">Escribe el número con código de país y el mensaje que quieres enviar.</p>
+  <p class="intro">Escribe el identificador del destinatario que acepta WhatsApp y el mensaje que quieres enviar.</p>
   <form id="send-form" action="/api/send" method="post">
-    <label for="to">Número de destino</label>
-    <input id="to" name="to" type="tel" inputmode="tel" autocomplete="tel" placeholder="5215512345678" required>
-    <p class="hint">Incluye el código de país, sin espacios ni el signo +. Ejemplo México: 5215512345678.</p>
+    <label for="to">Destinatario</label>
+    <input id="to" name="to" type="text" autocomplete="off" placeholder="user:192325112357002" required>
+    <p class="hint">Puedes usar el formato de la API (por ejemplo, user:192325112357002) o un número con código de país.</p>
     <label for="message">Mensaje</label>
     <textarea id="message" name="message" required maxlength="4000" placeholder="Escribe tu mensaje"></textarea>
     <button id="submit" type="submit">Enviar mensaje</button>
@@ -34,8 +34,9 @@
  function show(text,kind){status.className='status '+kind;status.innerHTML=text;}
  form.onsubmit=function(e){
    if(e&&e.preventDefault)e.preventDefault();
-   var to=document.getElementById('to').value.replace(/[ +()\-]/g,''), message=document.getElementById('message').value;
-   if(!/^\d{8,15}$/.test(to)){show('Revisa el número: usa entre 8 y 15 dígitos con código de país.','error');return false;}
+   var to=document.getElementById('to').value.trim(), message=document.getElementById('message').value;
+   if(/^\d{8,15}$/.test(to.replace(/[ +()\-]/g,'')))to=to.replace(/[ +()\-]/g,'');
+   if(!/^(?:\d{8,15}|user:\d{1,30})$/.test(to)){show('Revisa el destinatario. Usa un número con código de país o el formato user:ID.','error');return false;}
    button.disabled=true;button.innerHTML='Enviando…';status.className='status';
    var xhr=new XMLHttpRequest();xhr.open('POST','/api/send',true);xhr.setRequestHeader('Content-Type','application/json');
    xhr.onreadystatechange=function(){if(xhr.readyState!==4)return;button.disabled=false;button.innerHTML='Enviar mensaje';var data={};try{data=JSON.parse(xhr.responseText);}catch(ignore){}
