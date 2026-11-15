@@ -16,6 +16,8 @@ module.exports = async function handler(req, res) {
   }
   let to = String((body && body.to) || '').trim();
   if (/^[\d +()\-]+$/.test(to)) to = to.replace(/[ +()\-]/g, '');
+  // WhatsApp Agent identifica destinatarios numéricos con el prefijo "user:".
+  if (/^\d{8,15}$/.test(to)) to = 'user:' + to;
   const message = String((body && body.message) || '').trim();
   if (!/^(?:\d{8,15}|user:\d{1,30})$/.test(to) || !message || message.length > 4000) {
     return res.status(400).json({ error: 'Indica un destinatario válido (número con código de país o user:ID) y un mensaje de hasta 4000 caracteres.' });
