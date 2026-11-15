@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WhatsApp · Enviar mensaje</title>
+  <style>
+    body{margin:0;background:#edf4f1;color:#18332b;font:16px Arial,sans-serif}
+    .wrap{max-width:520px;margin:24px auto;padding:16px}
+    .card{background:#fff;border:1px solid #d8e5df;border-radius:8px;padding:22px;box-shadow:0 4px 18px #173c2b12}
+    h1{font-size:24px;margin:0 0 8px}.intro{color:#526860;line-height:1.5;margin:0 0 22px}
+    label{display:block;font-weight:bold;margin:16px 0 7px}
+    input,textarea{box-sizing:border-box;width:100%;font:16px Arial,sans-serif;padding:12px;border:1px solid #aebfb7;border-radius:5px;background:#fff;color:#18332b}
+    textarea{height:120px;resize:vertical}button{margin-top:18px;background:#087e58;color:white;border:0;border-radius:5px;padding:13px 18px;font-size:16px;font-weight:bold;width:100%;cursor:pointer}
+    button:disabled{background:#78958a}.hint{font-size:13px;color:#64766e;line-height:1.5}.status{padding:12px;margin-top:14px;border-radius:5px;display:none;line-height:1.4}.ok{display:block;background:#e4f5eb;color:#185c37}.error{display:block;background:#fff0ed;color:#8c2e21}
+  </style>
+</head>
+<body><div class="wrap"><main class="card">
+  <h1>Enviar por WhatsApp</h1>
+  <p class="intro">Escribe el número con código de país y el mensaje que quieres enviar.</p>
+  <form id="send-form" action="/api/send" method="post">
+    <label for="to">Número de destino</label>
+    <input id="to" name="to" type="tel" inputmode="tel" autocomplete="tel" placeholder="5215512345678" required>
+    <p class="hint">Incluye el código de país, sin espacios ni el signo +. Ejemplo México: 5215512345678.</p>
+    <label for="message">Mensaje</label>
+    <textarea id="message" name="message" required maxlength="4000" placeholder="Escribe tu mensaje"></textarea>
+    <button id="submit" type="submit">Enviar mensaje</button>
+    <div id="status" class="status" role="status"></div>
+  </form>
+</main></div>
+<script>
+(function(){
+ var form=document.getElementById('send-form'), button=document.getElementById('submit'), status=document.getElementById('status');
+ function show(text,kind){status.className='status '+kind;status.innerHTML=text;}
+ form.onsubmit=function(e){
+   if(e&&e.preventDefault)e.preventDefault();
+   var to=document.getElementById('to').value.replace(/[ +()\-]/g,''), message=document.getElementById('message').value;
+   if(!/^\d{8,15}$/.test(to)){show('Revisa el número: usa entre 8 y 15 dígitos con código de país.','error');return false;}
+   button.disabled=true;button.innerHTML='Enviando…';status.className='status';
+   var xhr=new XMLHttpRequest();xhr.open('POST','/api/send',true);xhr.setRequestHeader('Content-Type','application/json');
+   xhr.onreadystatechange=function(){if(xhr.readyState!==4)return;button.disabled=false;button.innerHTML='Enviar mensaje';var data={};try{data=JSON.parse(xhr.responseText);}catch(ignore){}
+     if(xhr.status>=200&&xhr.status<300)show('Solicitud enviada. '+(data.message||''),'ok');else show(data.error||'No se pudo enviar. Revisa la configuración de la API.','error');};
+   xhr.onerror=function(){button.disabled=false;button.innerHTML='Enviar mensaje';show('No se pudo conectar. Comprueba tu conexión e inténtalo otra vez.','error');};
+   xhr.send(JSON.stringify({to:to,message:message}));return false;
+ };
+}());
+</script>
+</body></html>
