@@ -46,12 +46,27 @@
      if(xhr.status<200||xhr.status>=300){updatesState.textContent=data.error||'No se pudieron cargar los mensajes.';return;}
      var items=Array.isArray(data)?data:(data.updates||data.messages||data.data||[]);
      if(!Array.isArray(items)){items=[items];}
+     // WhatsApp Agent también devuelve el formato webhook: entry[].changes[].value.
+     if(!Array.isArray(data)&&Array.isArray(data.entry)){
+       items=[];
+       data.entry.forEach(function(entry){(entry.changes||[]).forEach(function(change){
+         var value=change.value||{};
+         (value.messages||[]).forEach(function(message){items.push({kind:'Mensaje',message:message,contact:(value.contacts||[])[0]||{}});});
+         (value.statuses||[]).forEach(function(status){items.push({kind:'Estado',status:status});});
+       });});
+     }
      updatesList.textContent='';
      if(!items.length){updatesState.textContent='No hay mensajes recientes.';return;}
      updatesState.textContent=items.length+' actualización'+(items.length===1?'':'es')+'.';
      items.forEach(function(item,index){var article=document.createElement('article');article.className='update-item';var title=document.createElement('strong');
-       var kind=(item&& (item.type||item.event||item.status))||('Actualización '+(index+1));title.textContent=String(kind);
-       var details=document.createElement('pre');details.textContent=JSON.stringify(item,null,2);article.appendChild(title);article.appendChild(details);updatesList.appendChild(article);
+       var message=item&&item.message, status=item&&item.status;
+       var kind=(item&&item.kind)||(message?'Mensaje':'')||(status?'Estado':'')||(item&& (item.type||item.event||item.status))||('Actualización '+(index+1));
+       title.textContent=String(kind)+(message&&message.from?' · '+message.from:'')+(status&&status.recipient_id?' · '+status.recipient_id:'');
+       var details=document.createElement('pre');
+       if(message){details.textContent=(message.text&&message.text.body)||JSON.stringify(message,null,2);if(message.timestamp)details.textContent+='\n'+new Date(Number(message.timestamp)*1000).toLocaleString();}
+       else if(status){details.textContent=JSON.stringify(status,null,2);}
+       else{details.textContent=JSON.stringify(item,null,2);}
+       article.appendChild(title);article.appendChild(details);updatesList.appendChild(article);
      });
    };
    xhr.onerror=function(){refreshButton.disabled=false;updatesState.textContent='No se pudieron cargar los mensajes. Comprueba la conexión e inténtalo de nuevo.';};xhr.send();
