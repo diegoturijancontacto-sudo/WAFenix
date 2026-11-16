@@ -2,150 +2,465 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>WhatsApp · Enviar mensaje</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>XLink Chat · WhatsApp</title>
   <style>
-    body{margin:0;background:#edf4f1;color:#18332b;font:16px Arial,sans-serif}
-    .wrap{max-width:520px;margin:24px auto;padding:16px}
-    .card{background:#fff;border:1px solid #d8e5df;border-radius:8px;padding:22px;box-shadow:0 4px 18px #173c2b12}
-    h1{font-size:24px;margin:0 0 8px}.intro{color:#526860;line-height:1.5;margin:0 0 22px}
-    label{display:block;font-weight:bold;margin:16px 0 7px}
-    input,textarea{box-sizing:border-box;width:100%;font:16px Arial,sans-serif;padding:12px;border:1px solid #aebfb7;border-radius:5px;background:#fff;color:#18332b}
-    textarea{height:120px;resize:vertical}button{margin-top:18px;background:#087e58;color:white;border:0;border-radius:5px;padding:13px 18px;font-size:16px;font-weight:bold;width:100%;cursor:pointer}
-    button:disabled{background:#78958a}.hint{font-size:13px;color:#64766e;line-height:1.5}.status{padding:12px;margin-top:14px;border-radius:5px;display:none;line-height:1.4}.ok{display:block;background:#e4f5eb;color:#185c37}.error{display:block;background:#fff0ed;color:#8c2e21}
-    .updates{margin-top:26px;border-top:1px solid #d8e5df;padding-top:18px}.updates-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.updates h2{font-size:19px;margin:0}.updates-actions{display:flex;gap:8px}.updates button{width:auto;margin:0;padding:9px 12px;font-size:14px}.updates button.secondary{background:#fff;color:#8c2e21;border:1px solid #d8b5ae}.updates-state{color:#64766e;font-size:14px;margin:12px 0}.update-item{border:1px solid #d8e5df;border-radius:6px;padding:12px;margin-top:10px}.update-item.new{border-color:#087e58;background:#f3fbf7}.update-item strong{display:block;margin-bottom:6px}.update-item pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px monospace;margin:0;color:#526860}
+    :root {
+      --bg-dark: #1a1a1a;
+      --bg-panel: #2a2a2a;
+      --bg-input: #333333;
+      --text-main: #e0e0e0;
+      --text-muted: #888888;
+      --accent-yellow: #f0c000;
+      --accent-green: #087e58;
+      --border-color: #444444;
+      --msg-out-bg: #005c4b;
+      --msg-in-bg: #202c33;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font: 14px/1.4 'Segoe UI', Arial, sans-serif;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    /* Header estilo Xbox 360 */
+    .header {
+      background: var(--bg-panel);
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--accent-yellow);
+      flex-shrink: 0;
+    }
+    .header h1 { font-size: 14px; margin: 0; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-yellow); }
+    .header .user-badge { font-size: 10px; background: var(--bg-dark); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); color: var(--text-muted); }
+
+    /* Chat area */
+    .chat-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: linear-gradient(180deg, #1a1a1a 0%, #222222 100%);
+    }
+    .chat-bubble {
+      max-width: 85%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+      position: relative;
+      word-wrap: break-word;
+      animation: fadeIn 0.2s ease-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .chat-bubble.in {
+      align-self: flex-start;
+      background: var(--msg-in-bg);
+      border-bottom-left-radius: 2px;
+      border: 1px solid #2a3942;
+    }
+    .chat-bubble.out {
+      align-self: flex-end;
+      background: var(--msg-out-bg);
+      border-bottom-right-radius: 2px;
+      border: 1px solid #005c4b;
+    }
+    .chat-bubble .meta {
+      font-size: 9px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      display: block;
+      text-align: right;
+      opacity: 0.8;
+    }
+    .chat-bubble .sender {
+      font-size: 10px;
+      font-weight: bold;
+      color: var(--accent-yellow);
+      margin-bottom: 2px;
+      display: block;
+    }
+    .empty-state {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-top: 40px;
+    }
+    .updates-state {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 10px;
+    }
+
+    /* Input area */
+    .input-area {
+      background: var(--bg-panel);
+      padding: 8px;
+      border-top: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+    .input-row {
+      display: flex;
+      gap: 6px;
+      align-items: flex-end;
+    }
+    .input-row input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 8px 12px;
+      color: var(--text-main);
+      font-size: 13px;
+      outline: none;
+      min-width: 0;
+    }
+    .input-row input:focus { border-color: var(--accent-yellow); }
+    .input-row button {
+      background: var(--accent-yellow);
+      color: #000;
+      border: none;
+      border-radius: 50%;
+      width: 38px;
+      height: 38px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .input-row button:disabled { background: #555; color: #888; cursor: not-allowed; }
+    .input-row button:active:not(:disabled) { background: #d4a800; }
+
+    /* Status bar */
+    .status-bar {
+      font-size: 10px;
+      padding: 4px 8px;
+      text-align: center;
+      min-height: 18px;
+    }
+    .status-bar.ok { color: #4caf50; }
+    .status-bar.error { color: #f44336; }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 8px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .toolbar button {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 10px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .toolbar button:active { background: var(--bg-dark); }
+    .toolbar button.danger { color: #e57373; border-color: #e57373; }
   </style>
 </head>
-<body><div class="wrap"><main class="card">
-  <h1>Enviar por WhatsApp</h1>
-  <p class="intro">Escribe el identificador del destinatario que acepta WhatsApp y el mensaje que quieres enviar.</p>
-  <form id="send-form" action="/api/send" method="post">
-    <label for="to">Destinatario</label>
-    <input id="to" name="to" type="text" autocomplete="off" placeholder="user:192325112357002" required>
-    <p class="hint">Puedes usar el formato de la API (por ejemplo, user:192325112357002) o un número con código de país.</p>
-    <label for="message">Mensaje</label>
-    <textarea id="message" name="message" required maxlength="4000" placeholder="Escribe tu mensaje"></textarea>
-    <button id="submit" type="submit">Enviar mensaje</button>
-    <div id="status" class="status" role="status"></div>
-  </form>
-  <section class="updates" aria-labelledby="updates-title">
-    <div class="updates-head">
-      <h2 id="updates-title">Actualizaciones recientes</h2>
-      <div class="updates-actions">
-        <button id="refresh-updates" type="button">Actualizar</button>
-        <button id="clear-updates" type="button" class="secondary">Borrar</button>
-      </div>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <h1>XLink Chat</h1>
+    <span class="user-badge" id="user-badge">192325112357002</span>
+  </header>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button id="refresh-updates" type="button">↻ Actualizar</button>
+    <button id="clear-updates" type="button" class="danger">✕ Borrar</button>
+  </div>
+
+  <!-- Chat messages -->
+  <div class="chat-container" id="chat-container">
+    <div class="updates-state" id="updates-state">Cargando mensajes…</div>
+  </div>
+
+  <!-- Input area -->
+  <div class="input-area">
+    <div id="status" class="status-bar" role="status"></div>
+    <div class="input-row">
+      <input type="text" id="to" value="192325112357002" placeholder="Destinatario" autocomplete="off">
+      <input type="text" id="message" placeholder="Escribe un mensaje..." autocomplete="off" maxlength="4000">
+      <button id="submit" type="button">➤</button>
     </div>
-    <p id="updates-state" class="updates-state" role="status">Cargando mensajes…</p>
-    <div id="updates-list" aria-live="polite"></div>
-  </section>
-</main></div>
+  </div>
+
 <script>
 (function(){
- var form=document.getElementById('send-form'), button=document.getElementById('submit'), status=document.getElementById('status');
- var updatesState=document.getElementById('updates-state'), updatesList=document.getElementById('updates-list');
- var refreshButton=document.getElementById('refresh-updates'), clearButton=document.getElementById('clear-updates');
- var KEY='wa_inbox_v1', MAX=100;
+  var chatContainer = document.getElementById('chat-container');
+  var updatesState = document.getElementById('updates-state');
+  var statusEl = document.getElementById('status');
+  var refreshButton = document.getElementById('refresh-updates');
+  var clearButton = document.getElementById('clear-updates');
+  var submitButton = document.getElementById('submit');
+  var toInput = document.getElementById('to');
+  var messageInput = document.getElementById('message');
+  var KEY = 'wa_inbox_v2', MAX = 100;
 
- function show(text,kind){status.className='status '+kind;status.textContent=text;}
+  // Estado local
+  var savedMessages = [];
 
- // La API solo devuelve mensajes NUEVOS (consume el offset), así que
- // los acumulamos aquí en el navegador para no perderlos.
- function loadSaved(){try{var s=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(s)?s:[];}catch(e){return [];}}
- function saveAll(list){try{localStorage.setItem(KEY,JSON.stringify(list.slice(-MAX)));}catch(e){}}
+  function showStatus(text, kind) {
+    statusEl.className = 'status-bar ' + (kind || '');
+    statusEl.textContent = text;
+    if (kind === 'ok') {
+      setTimeout(function(){ statusEl.textContent = ''; statusEl.className = 'status-bar'; }, 4000);
+    }
+  }
 
- function extractItems(data){
-   var items=Array.isArray(data)?data:(data.updates||data.messages||data.data||[]);
-   if(!Array.isArray(items)){items=[items];}
-   if(!Array.isArray(data)&&Array.isArray(data.entry)){
-     items=[];
-     data.entry.forEach(function(entry){(entry.changes||[]).forEach(function(change){
-       var value=change.value||{};
-       (value.messages||[]).forEach(function(m){items.push({kind:'Mensaje',message:m,contact:(value.contacts||[])[0]||{}});});
-       (value.statuses||[]).forEach(function(s){items.push({kind:'Estado',status:s});});
-     });});
-   }
-   return items;
- }
+  function loadSaved() {
+    try {
+      var s = JSON.parse(localStorage.getItem(KEY) || '[]');
+      return Array.isArray(s) ? s : [];
+    } catch(e) { return []; }
+  }
 
- function render(list,newIds){
-   updatesList.textContent='';
-   if(!list.length){updatesState.textContent='No hay mensajes recientes.';return;}
-   updatesState.textContent=list.length+' actualización'+(list.length===1?'':'es')+'.';
-   list.forEach(function(item,index){
-     var article=document.createElement('article');
-     var message=item&&item.message, st=item&&item.status;
-     article.className='update-item'+(message&&newIds[message.id]?' new':'');
-     var title=document.createElement('strong');
-     var kind=(item&&item.kind)||(message?'Mensaje':'')||(st?'Estado':'')||(item&&(item.type||item.event||item.status))||('Actualización '+(index+1));
-     title.textContent=String(kind)+(message&&message.from?' · '+message.from:'')+(st&&st.recipient_id?' · '+st.recipient_id:'');
-     var details=document.createElement('pre');
-     if(message){
-       details.textContent=(message.text&&message.text.body)||JSON.stringify(message,null,2);
-       if(message.timestamp)details.textContent+='\n'+new Date(Number(message.timestamp)*1000).toLocaleString();
-     }else if(st){details.textContent=JSON.stringify(st,null,2);}
-     else{details.textContent=JSON.stringify(item,null,2);}
-     article.appendChild(title);article.appendChild(details);updatesList.appendChild(article);
-   });
- }
+  function saveAll(list) {
+    try { localStorage.setItem(KEY, JSON.stringify(list.slice(-MAX))); } catch(e) {}
+  }
 
- function loadUpdates(){
-   refreshButton.disabled=true;updatesState.textContent='Cargando mensajes…';
-   var xhr=new XMLHttpRequest();xhr.open('GET','/api/updates',true);
-   xhr.onreadystatechange=function(){
-     if(xhr.readyState!==4)return;
-     refreshButton.disabled=false;
-     var data={};try{data=JSON.parse(xhr.responseText);}catch(ignore){}
-     var saved=loadSaved();
-     if(xhr.status<200||xhr.status>=300){
-       render(saved,{});
-       updatesState.textContent=(data.error||'No se pudieron cargar los mensajes nuevos.')+(saved.length?' Mostrando el historial guardado.':'');
-       return;
-     }
-     var fresh=extractItems(data), newIds={}, seen={}, statuses=[];
-     saved.forEach(function(i){if(i.message&&i.message.id)seen[i.message.id]=1;});
-     fresh.forEach(function(i){
-       if(i.message){
-         var id=i.message.id;
-         if(id&&seen[id])return;
-         if(id){seen[id]=1;newIds[id]=1;}
-         saved.push(i);
-       }else if(i.status){statuses.push(i);}
-     });
-     saveAll(saved);
-     // más recientes primero; los estados de esta consulta van arriba sin guardarse
-     var list=statuses.concat(saved.slice().reverse());
-     render(list,newIds);
-   };
-   xhr.onerror=function(){
-     refreshButton.disabled=false;
-     var saved=loadSaved();
-     render(saved,{});
-     updatesState.textContent='No se pudieron cargar los mensajes. Comprueba la conexión e inténtalo de nuevo.'+(saved.length?' Mostrando el historial guardado.':'');
-   };
-   xhr.send();
- }
+  function extractItems(data) {
+    var items = Array.isArray(data) ? data : (data.updates || data.messages || data.data || []);
+    if (!Array.isArray(items)) items = [items];
+    if (!Array.isArray(data) && Array.isArray(data.entry)) {
+      items = [];
+      data.entry.forEach(function(entry) {
+        (entry.changes || []).forEach(function(change) {
+          var value = change.value || {};
+          (value.messages || []).forEach(function(m) {
+            items.push({ kind: 'Mensaje', message: m, contact: (value.contacts || [])[0] || {} });
+          });
+          (value.statuses || []).forEach(function(s) {
+            items.push({ kind: 'Estado', status: s });
+          });
+        });
+      });
+    }
+    return items;
+  }
 
- refreshButton.onclick=loadUpdates;
- clearButton.onclick=function(){
-   if(!confirm('¿Borrar el historial guardado en este navegador?'))return;
-   try{localStorage.removeItem(KEY);}catch(e){}
-   render([],{});
- };
- loadUpdates();
+  function render() {
+    // Limpiar chat
+    chatContainer.innerHTML = '';
 
- form.onsubmit=function(e){
-   if(e&&e.preventDefault)e.preventDefault();
-   var to=document.getElementById('to').value.trim(), message=document.getElementById('message').value;
-   if(/^\d{8,15}$/.test(to.replace(/[ +()\-]/g,'')))to=to.replace(/[ +()\-]/g,'');
-   if(!/^(?:\d{8,15}|user:\d{1,30})$/.test(to)){show('Revisa el destinatario. Usa un número con código de país o el formato user:ID.','error');return false;}
-   button.disabled=true;button.innerHTML='Enviando…';status.className='status';
-   var xhr=new XMLHttpRequest();xhr.open('POST','/api/send',true);xhr.setRequestHeader('Content-Type','application/json');
-   xhr.onreadystatechange=function(){if(xhr.readyState!==4)return;button.disabled=false;button.innerHTML='Enviar mensaje';var data={};try{data=JSON.parse(xhr.responseText);}catch(ignore){}
-     if(xhr.status>=200&&xhr.status<300)show('Solicitud enviada. '+(data.message||''),'ok');else show(data.error||'No se pudo enviar. Revisa la configuración de la API.','error');};
-   xhr.onerror=function(){button.disabled=false;button.innerHTML='Enviar mensaje';show('No se pudo conectar. Comprueba tu conexión e inténtalo otra vez.','error');};
-   xhr.send(JSON.stringify({to:to,message:message}));return false;
- };
-}());
+    if (savedMessages.length === 0) {
+      var empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'No hay mensajes recientes.';
+      chatContainer.appendChild(empty);
+      updatesState.textContent = '';
+      return;
+    }
+
+    updatesState.textContent = '';
+
+    // Renderizar mensajes (más antiguos arriba)
+    savedMessages.forEach(function(item) {
+      var message = item.message;
+      var st = item.status;
+      var bubble = document.createElement('div');
+      bubble.className = 'chat-bubble ' + (message ? 'in' : 'out');
+
+      if (message) {
+        // Mensaje recibido
+        var sender = document.createElement('span');
+        sender.className = 'sender';
+        sender.textContent = message.from || 'Desconocido';
+        bubble.appendChild(sender);
+
+        var body = document.createElement('div');
+        body.textContent = (message.text && message.text.body) || JSON.stringify(message, null, 2);
+        bubble.appendChild(body);
+
+        var meta = document.createElement('span');
+        meta.className = 'meta';
+        if (message.timestamp) {
+          var d = new Date(Number(message.timestamp) * 1000);
+          meta.textContent = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+        bubble.appendChild(meta);
+      } else if (st) {
+        // Estado (enviado)
+        var body = document.createElement('div');
+        body.textContent = '✅ Mensaje enviado a ' + (st.recipient_id || 'destinatario');
+        bubble.appendChild(body);
+        var meta = document.createElement('span');
+        meta.className = 'meta';
+        meta.textContent = 'Estado';
+        bubble.appendChild(meta);
+      } else {
+        var body = document.createElement('div');
+        body.textContent = JSON.stringify(item, null, 2);
+        bubble.appendChild(body);
+      }
+
+      chatContainer.appendChild(bubble);
+    });
+
+    // Scroll al final
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+
+  function loadUpdates() {
+    refreshButton.disabled = true;
+    updatesState.textContent = 'Cargando mensajes…';
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/updates', true);
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState !== 4) return;
+      refreshButton.disabled = false;
+
+      var data = {};
+      try { data = JSON.parse(xhr.responseText); } catch(ignore) {}
+
+      savedMessages = loadSaved();
+
+      if (xhr.status < 200 || xhr.status >= 300) {
+        render();
+        updatesState.textContent = (data.error || 'No se pudieron cargar los mensajes nuevos.') +
+          (savedMessages.length ? ' Mostrando historial guardado.' : '');
+        return;
+      }
+
+      var fresh = extractItems(data);
+      var seen = {};
+      savedMessages.forEach(function(i) {
+        if (i.message && i.message.id) seen[i.message.id] = 1;
+      });
+
+      fresh.forEach(function(i) {
+        if (i.message) {
+          var id = i.message.id;
+          if (id && seen[id]) return;
+          if (id) seen[id] = 1;
+          savedMessages.push(i);
+        } else if (i.status) {
+          // Los estados no se guardan, solo se muestran temporalmente
+        }
+      });
+
+      saveAll(savedMessages);
+      render();
+    };
+
+    xhr.onerror = function() {
+      refreshButton.disabled = false;
+      savedMessages = loadSaved();
+      render();
+      updatesState.textContent = 'No se pudieron cargar los mensajes. Comprueba la conexión.';
+    };
+
+    xhr.send();
+  }
+
+  // Enviar mensaje
+  function sendMessage() {
+    var to = toInput.value.trim();
+    var message = messageInput.value.trim();
+
+    if (!to) { showStatus('El destinatario es obligatorio', 'error'); return; }
+    if (!message) { showStatus('El mensaje no puede estar vacío', 'error'); return; }
+
+    // Normalizar número
+    if (/^\d{8,15}$/.test(to.replace(/[ +()\-]/g, ''))) {
+      to = to.replace(/[ +()\-]/g, '');
+    }
+    if (!/^(?:\d{8,15}|user:\d{1,30})$/.test(to)) {
+      showStatus('Revisa el destinatario. Usa un número o user:ID.', 'error');
+      return;
+    }
+
+    submitButton.disabled = true;
+    showStatus('Enviando…', '');
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/send', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState !== 4) return;
+      submitButton.disabled = false;
+
+      var data = {};
+      try { data = JSON.parse(xhr.responseText); } catch(ignore) {}
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        showStatus('Mensaje enviado ✓', 'ok');
+        messageInput.value = '';
+        // Añadir mensaje localmente para feedback inmediato
+        savedMessages.push({
+          kind: 'Mensaje',
+          message: {
+            id: 'local_' + Date.now(),
+            from: 'Tú',
+            text: { body: message },
+            timestamp: Math.floor(Date.now() / 1000)
+          }
+        });
+        saveAll(savedMessages);
+        render();
+      } else {
+        showStatus(data.error || 'No se pudo enviar. Revisa la configuración.', 'error');
+      }
+    };
+
+    xhr.onerror = function() {
+      submitButton.disabled = false;
+      showStatus('No se pudo conectar. Comprueba tu conexión.', 'error');
+    };
+
+    xhr.send(JSON.stringify({ to: to, message: message }));
+  }
+
+  // Event listeners
+  refreshButton.onclick = loadUpdates;
+  clearButton.onclick = function() {
+    if (!confirm('¿Borrar el historial guardado en este navegador?')) return;
+    try { localStorage.removeItem(KEY); } catch(e) {}
+    savedMessages = [];
+    render();
+  };
+  submitButton.onclick = sendMessage;
+
+  // Enviar con Enter
+  messageInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // Actualizar badge con el destinatario por defecto
+  toInput.addEventListener('input', function() {
+    document.getElementById('user-badge').textContent = toInput.value || '...';
+  });
+
+  // Inicializar
+  savedMessages = loadSaved();
+  render();
+  loadUpdates();
+})();
 </script>
-</body></html>
+</body>
+</html>
