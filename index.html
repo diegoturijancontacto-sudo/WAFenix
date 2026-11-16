@@ -2,517 +2,150 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-  <title>Chat · WhatsApp Minimal</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WhatsApp · Enviar mensaje</title>
   <style>
-    /* Configuración base y soporte para pantallas ultra-compactas */
-    * {
-      box-sizing: border-box;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    html, body {
-      height: 100dvh;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background-color: #f0f2f5;
-    }
-    /* Patrón sutil estilo fondo de chat minimalista */
-    .chat-wallpaper {
-      background-color: #efeae2;
-      background-image: radial-gradient(#d6cfc2 0.75px, transparent 0.75px);
-      background-size: 16px 16px;
-    }
-    /* Scrollbar discreto */
-    .chat-scroll::-webkit-scrollbar {
-      width: 4px;
-    }
-    .chat-scroll::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, 0.16);
-      border-radius: 9999px;
-    }
-    /* Auto-ajuste limpio para el textarea */
-    textarea {
-      field-sizing: content;
-    }
+    body{margin:0;background:#edf4f1;color:#18332b;font:16px Arial,sans-serif}
+    .wrap{max-width:520px;margin:24px auto;padding:16px}
+    .card{background:#fff;border:1px solid #d8e5df;border-radius:8px;padding:22px;box-shadow:0 4px 18px #173c2b12}
+    h1{font-size:24px;margin:0 0 8px}.intro{color:#526860;line-height:1.5;margin:0 0 22px}
+    label{display:block;font-weight:bold;margin:16px 0 7px}
+    input,textarea{box-sizing:border-box;width:100%;font:16px Arial,sans-serif;padding:12px;border:1px solid #aebfb7;border-radius:5px;background:#fff;color:#18332b}
+    textarea{height:120px;resize:vertical}button{margin-top:18px;background:#087e58;color:white;border:0;border-radius:5px;padding:13px 18px;font-size:16px;font-weight:bold;width:100%;cursor:pointer}
+    button:disabled{background:#78958a}.hint{font-size:13px;color:#64766e;line-height:1.5}.status{padding:12px;margin-top:14px;border-radius:5px;display:none;line-height:1.4}.ok{display:block;background:#e4f5eb;color:#185c37}.error{display:block;background:#fff0ed;color:#8c2e21}
+    .updates{margin-top:26px;border-top:1px solid #d8e5df;padding-top:18px}.updates-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.updates h2{font-size:19px;margin:0}.updates-actions{display:flex;gap:8px}.updates button{width:auto;margin:0;padding:9px 12px;font-size:14px}.updates button.secondary{background:#fff;color:#8c2e21;border:1px solid #d8b5ae}.updates-state{color:#64766e;font-size:14px;margin:12px 0}.update-item{border:1px solid #d8e5df;border-radius:6px;padding:12px;margin-top:10px}.update-item.new{border-color:#087e58;background:#f3fbf7}.update-item strong{display:block;margin-bottom:6px}.update-item pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px monospace;margin:0;color:#526860}
   </style>
 </head>
-<body class="flex justify-center items-center bg-[#e5e7eb] text-[#111b21] antialiased">
-
-  <!-- Contenedor principal responsivo: ocupa 100% en móviles chicos y tarjeta centrada en pantallas grandes -->
-  <div class="w-full max-w-md h-[100dvh] sm:h-[94dvh] sm:rounded-2xl sm:shadow-xl bg-white flex flex-col overflow-hidden border-x sm:border border-black/5">
-
-    <!-- Barra Superior (Header estilo WhatsApp minimalista) -->
-    <header class="bg-[#008069] text-white px-2.5 py-2 flex items-center justify-between gap-1.5 shrink-0 shadow-sm z-10">
-      <div class="flex items-center gap-2 min-w-0 flex-1">
-        <!-- Avatar minimalista -->
-        <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 text-xs font-semibold tracking-tight">
-          WA
-        </div>
-        <!-- Información del destinatario activo -->
-        <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-1">
-            <h1 id="header-recipient" class="text-[13px] xs:text-sm font-semibold truncate leading-tight">
-              user:192325112357002
-            </h1>
-            <button id="toggle-recipient-btn" type="button" title="Cambiar destinatario"
-              class="p-1 rounded-full hover:bg-white/15 active:bg-white/25 transition shrink-0" aria-label="Editar destinatario">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z"/>
-              </svg>
-            </button>
-          </div>
-          <p id="connection-status" class="text-[11px] text-emerald-100/90 truncate leading-tight">
-            en línea · listo
-          </p>
-        </div>
-      </div>
-
-      <!-- Acciones compactas (Actualizar / Limpiar historial) -->
-      <div class="flex items-center gap-1 shrink-0">
-        <button id="refresh-updates" type="button" title="Actualizar mensajes"
-          class="p-2 rounded-full hover:bg-white/15 active:bg-white/25 transition disabled:opacity-50" aria-label="Actualizar">
-          <svg id="refresh-icon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/>
-          </svg>
-        </button>
-        <button id="clear-updates" type="button" title="Borrar chat local"
-          class="p-2 rounded-full hover:bg-white/15 active:bg-white/25 transition" aria-label="Borrar historial">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
-          </svg>
-        </button>
-      </div>
-    </header>
-
-    <!-- Panel desplegable minimalista para cambiar destinatario (oculto por defecto) -->
-    <div id="recipient-drawer" class="hidden bg-[#f0f2f5] border-b border-black/10 px-2.5 py-2 shrink-0">
-      <label for="to" class="block text-[11px] font-medium text-[#54656f] mb-1">
-        Destinatario (ID o teléfono con código de país)
-      </label>
-      <div class="flex items-center gap-1.5">
-        <input id="to" name="to" type="text" autocomplete="off"
-          value="user:192325112357002"
-          placeholder="user:192325112357002"
-          class="w-full text-xs px-2.5 py-1.5 rounded-lg bg-white border border-black/15 text-[#111b21] focus:outline-none focus:border-[#008069]">
-        <button id="save-recipient-btn" type="button"
-          class="px-2.5 py-1.5 rounded-lg bg-[#008069] text-white text-xs font-medium shrink-0 active:scale-95 transition">
-          OK
-        </button>
+<body><div class="wrap"><main class="card">
+  <h1>Enviar por WhatsApp</h1>
+  <p class="intro">Escribe el identificador del destinatario que acepta WhatsApp y el mensaje que quieres enviar.</p>
+  <form id="send-form" action="/api/send" method="post">
+    <label for="to">Destinatario</label>
+    <input id="to" name="to" type="text" autocomplete="off" placeholder="user:192325112357002" required>
+    <p class="hint">Puedes usar el formato de la API (por ejemplo, user:192325112357002) o un número con código de país.</p>
+    <label for="message">Mensaje</label>
+    <textarea id="message" name="message" required maxlength="4000" placeholder="Escribe tu mensaje"></textarea>
+    <button id="submit" type="submit">Enviar mensaje</button>
+    <div id="status" class="status" role="status"></div>
+  </form>
+  <section class="updates" aria-labelledby="updates-title">
+    <div class="updates-head">
+      <h2 id="updates-title">Actualizaciones recientes</h2>
+      <div class="updates-actions">
+        <button id="refresh-updates" type="button">Actualizar</button>
+        <button id="clear-updates" type="button" class="secondary">Borrar</button>
       </div>
     </div>
-
-    <!-- Banner de confirmación inline (reemplaza confirm() nativo) -->
-    <div id="confirm-bar" class="hidden bg-amber-50 border-b border-amber-200 px-3 py-2 flex items-center justify-between gap-2 text-xs text-amber-900 shrink-0">
-      <span class="truncate">¿Borrar historial local?</span>
-      <div class="flex items-center gap-1.5 shrink-0">
-        <button id="confirm-yes" type="button" class="px-2.5 py-1 rounded-md bg-red-600 text-white font-medium">Sí</button>
-        <button id="confirm-no" type="button" class="px-2.5 py-1 rounded-md bg-white border border-amber-300 text-amber-900">No</button>
-      </div>
-    </div>
-
-    <!-- Notificación flotante sutil para errores/estados de envío -->
-    <div id="toast" role="status" class="hidden mx-2.5 mt-2 px-3 py-1.5 rounded-lg text-xs text-center shadow-sm shrink-0 transition-all"></div>
-
-    <!-- Área de mensajes (Chat Feed) -->
-    <main id="chat-feed" class="flex-1 overflow-y-auto chat-wallpaper chat-scroll px-2.5 py-3 flex flex-col gap-2" aria-live="polite">
-      <!-- Estado vacío / cargando -->
-      <div id="empty-state" class="my-auto mx-auto max-w-[240px] bg-[#fff5c4]/90 text-[#54656f] text-[11px] text-center px-3 py-2 rounded-xl shadow-xs">
-        Cargando conversación con <strong class="font-medium text-[#111b21]">192325112357002</strong>…
-      </div>
-    </main>
-
-    <!-- Barra inferior de escritura (Input Bar estilo WhatsApp) -->
-    <footer class="bg-[#f0f2f5] px-2 py-1.5 flex items-end gap-1.5 shrink-0 border-t border-black/5">
-      <form id="send-form" action="/api/send" method="post" class="flex items-end gap-1.5 w-full">
-        <div class="flex-1 bg-white rounded-2xl px-3 py-1.5 shadow-2xs border border-black/5 flex items-center min-h-[38px]">
-          <textarea id="message" name="message" rows="1" required maxlength="4000"
-            placeholder="Mensaje"
-            class="w-full bg-transparent text-[14px] leading-[1.35] text-[#111b21] placeholder-[#667781] resize-none max-h-24 focus:outline-none"></textarea>
-        </div>
-        <button id="submit" type="submit" aria-label="Enviar mensaje"
-          class="w-9 h-9 rounded-full bg-[#00a884] hover:bg-[#008f70] active:scale-95 disabled:bg-[#8696a0] text-white flex items-center justify-center shrink-0 shadow-xs transition">
-          <svg class="w-4 h-4 translate-x-[1px]" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-          </svg>
-        </button>
-      </form>
-    </footer>
-
-  </div>
-
+    <p id="updates-state" class="updates-state" role="status">Cargando mensajes…</p>
+    <div id="updates-list" aria-live="polite"></div>
+  </section>
+</main></div>
 <script>
-(function () {
-  // Referencias del DOM
-  var form = document.getElementById('send-form');
-  var toInput = document.getElementById('to');
-  var msgInput = document.getElementById('message');
-  var submitBtn = document.getElementById('submit');
-  var chatFeed = document.getElementById('chat-feed');
-  var emptyState = document.getElementById('empty-state');
-  var headerRecipient = document.getElementById('header-recipient');
-  var connectionStatus = document.getElementById('connection-status');
-  var toggleRecipientBtn = document.getElementById('toggle-recipient-btn');
-  var saveRecipientBtn = document.getElementById('save-recipient-btn');
-  var recipientDrawer = document.getElementById('recipient-drawer');
-  var refreshBtn = document.getElementById('refresh-updates');
-  var refreshIcon = document.getElementById('refresh-icon');
-  var clearBtn = document.getElementById('clear-updates');
-  var confirmBar = document.getElementById('confirm-bar');
-  var confirmYes = document.getElementById('confirm-yes');
-  var confirmNo = document.getElementById('confirm-no');
-  var toast = document.getElementById('toast');
+(function(){
+ var form=document.getElementById('send-form'), button=document.getElementById('submit'), status=document.getElementById('status');
+ var updatesState=document.getElementById('updates-state'), updatesList=document.getElementById('updates-list');
+ var refreshButton=document.getElementById('refresh-updates'), clearButton=document.getElementById('clear-updates');
+ var KEY='wa_inbox_v1', MAX=100;
 
-  var DEFAULT_USER = 'user:192325112357002';
-  var STORAGE_KEY = 'wa_chat_minimal_v2';
-  var RECIPIENT_KEY = 'wa_default_recipient_v2';
-  var MAX_ITEMS = 120;
-  var toastTimer = null;
+ function show(text,kind){status.className='status '+kind;status.textContent=text;}
 
-  // Inicializar destinatario por defecto (192325112357002)
-  function initRecipient() {
-    var savedTo = '';
-    try { savedTo = localStorage.getItem(RECIPIENT_KEY) || ''; } catch (e) {}
-    var activeTo = savedTo.trim() || DEFAULT_USER;
-    toInput.value = activeTo;
-    headerRecipient.textContent = activeTo;
-  }
+ // La API solo devuelve mensajes NUEVOS (consume el offset), así que
+ // los acumulamos aquí en el navegador para no perderlos.
+ function loadSaved(){try{var s=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(s)?s:[];}catch(e){return [];}}
+ function saveAll(list){try{localStorage.setItem(KEY,JSON.stringify(list.slice(-MAX)));}catch(e){}}
 
-  function normalizeRecipient(raw) {
-    var val = (raw || '').trim();
-    if (!val) return DEFAULT_USER;
-    // Si escriben solo los dígitos del ID largo (ej. 192325112357002), agregar prefijo user: si tiene >15 dígitos
-    if (/^\d{16,30}$/.test(val)) return 'user:' + val;
-    if (/^\d{8,15}$/.test(val.replace(/[ +()\-]/g, ''))) {
-      return val.replace(/[ +()\-]/g, '');
-    }
-    return val;
-  }
+ function extractItems(data){
+   var items=Array.isArray(data)?data:(data.updates||data.messages||data.data||[]);
+   if(!Array.isArray(items)){items=[items];}
+   if(!Array.isArray(data)&&Array.isArray(data.entry)){
+     items=[];
+     data.entry.forEach(function(entry){(entry.changes||[]).forEach(function(change){
+       var value=change.value||{};
+       (value.messages||[]).forEach(function(m){items.push({kind:'Mensaje',message:m,contact:(value.contacts||[])[0]||{}});});
+       (value.statuses||[]).forEach(function(s){items.push({kind:'Estado',status:s});});
+     });});
+   }
+   return items;
+ }
 
-  function showToast(text, isError) {
-    clearTimeout(toastTimer);
-    toast.textContent = text;
-    toast.className = 'mx-2.5 mt-2 px-3 py-1.5 rounded-lg text-[11px] text-center shadow-xs shrink-0 ' +
-      (isError ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-emerald-100 text-emerald-900 border border-emerald-200');
-    toastTimer = setTimeout(function () {
-      toast.className = 'hidden';
-    }, 3200);
-  }
+ function render(list,newIds){
+   updatesList.textContent='';
+   if(!list.length){updatesState.textContent='No hay mensajes recientes.';return;}
+   updatesState.textContent=list.length+' actualización'+(list.length===1?'':'es')+'.';
+   list.forEach(function(item,index){
+     var article=document.createElement('article');
+     var message=item&&item.message, st=item&&item.status;
+     article.className='update-item'+(message&&newIds[message.id]?' new':'');
+     var title=document.createElement('strong');
+     var kind=(item&&item.kind)||(message?'Mensaje':'')||(st?'Estado':'')||(item&&(item.type||item.event||item.status))||('Actualización '+(index+1));
+     title.textContent=String(kind)+(message&&message.from?' · '+message.from:'')+(st&&st.recipient_id?' · '+st.recipient_id:'');
+     var details=document.createElement('pre');
+     if(message){
+       details.textContent=(message.text&&message.text.body)||JSON.stringify(message,null,2);
+       if(message.timestamp)details.textContent+='\n'+new Date(Number(message.timestamp)*1000).toLocaleString();
+     }else if(st){details.textContent=JSON.stringify(st,null,2);}
+     else{details.textContent=JSON.stringify(item,null,2);}
+     article.appendChild(title);article.appendChild(details);updatesList.appendChild(article);
+   });
+ }
 
-  // Persistencia local de mensajes enviados y recibidos
-  function loadSaved() {
-    try {
-      var list = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      return Array.isArray(list) ? list : [];
-    } catch (e) {
-      return [];
-    }
-  }
+ function loadUpdates(){
+   refreshButton.disabled=true;updatesState.textContent='Cargando mensajes…';
+   var xhr=new XMLHttpRequest();xhr.open('GET','/api/updates',true);
+   xhr.onreadystatechange=function(){
+     if(xhr.readyState!==4)return;
+     refreshButton.disabled=false;
+     var data={};try{data=JSON.parse(xhr.responseText);}catch(ignore){}
+     var saved=loadSaved();
+     if(xhr.status<200||xhr.status>=300){
+       render(saved,{});
+       updatesState.textContent=(data.error||'No se pudieron cargar los mensajes nuevos.')+(saved.length?' Mostrando el historial guardado.':'');
+       return;
+     }
+     var fresh=extractItems(data), newIds={}, seen={}, statuses=[];
+     saved.forEach(function(i){if(i.message&&i.message.id)seen[i.message.id]=1;});
+     fresh.forEach(function(i){
+       if(i.message){
+         var id=i.message.id;
+         if(id&&seen[id])return;
+         if(id){seen[id]=1;newIds[id]=1;}
+         saved.push(i);
+       }else if(i.status){statuses.push(i);}
+     });
+     saveAll(saved);
+     // más recientes primero; los estados de esta consulta van arriba sin guardarse
+     var list=statuses.concat(saved.slice().reverse());
+     render(list,newIds);
+   };
+   xhr.onerror=function(){
+     refreshButton.disabled=false;
+     var saved=loadSaved();
+     render(saved,{});
+     updatesState.textContent='No se pudieron cargar los mensajes. Comprueba la conexión e inténtalo de nuevo.'+(saved.length?' Mostrando el historial guardado.':'');
+   };
+   xhr.send();
+ }
 
-  function saveAll(list) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(list.slice(-MAX_ITEMS)));
-    } catch (e) {}
-  }
+ refreshButton.onclick=loadUpdates;
+ clearButton.onclick=function(){
+   if(!confirm('¿Borrar el historial guardado en este navegador?'))return;
+   try{localStorage.removeItem(KEY);}catch(e){}
+   render([],{});
+ };
+ loadUpdates();
 
-  function formatTime(ts) {
-    var d = ts ? new Date(ts) : new Date();
-    if (isNaN(d.getTime())) d = new Date();
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-
-  function scrollToBottom() {
-    chatFeed.scrollTop = chatFeed.scrollHeight;
-  }
-
-  // Extraer mensajes del formato de la API o webhook de WhatsApp
-  function extractItems(data) {
-    var items = Array.isArray(data) ? data : (data.updates || data.messages || data.data || []);
-    if (!Array.isArray(items)) items = [items];
-    if (!Array.isArray(data) && Array.isArray(data.entry)) {
-      items = [];
-      data.entry.forEach(function (entry) {
-        (entry.changes || []).forEach(function (change) {
-          var value = change.value || {};
-          (value.messages || []).forEach(function (m) {
-            items.push({ kind: 'incoming', message: m, contact: (value.contacts || [])[0] || {} });
-          });
-          (value.statuses || []).forEach(function (s) {
-            items.push({ kind: 'status', status: s });
-          });
-        });
-      });
-    }
-    return items;
-  }
-
-  // Renderizar burbujas estilo WhatsApp minimalista
-  function renderChat(list) {
-    chatFeed.innerHTML = '';
-
-    if (!list.length) {
-      emptyState.innerHTML = 'Chat minimalista con <strong class="font-medium text-[#111b21]">' +
-        headerRecipient.textContent + '</strong>.<br>Escribe un mensaje para comenzar.';
-      chatFeed.appendChild(emptyState);
-      return;
-    }
-
-    list.forEach(function (item) {
-      // Caso 1: Mensaje enviado por nosotros (burbuja verde derecha)
-      if (item.direction === 'out') {
-        var outWrap = document.createElement('div');
-        outWrap.className = 'flex justify-end';
-
-        var outBubble = document.createElement('div');
-        outBubble.className = 'max-w-[85%] bg-[#d9fdd3] text-[#111b21] rounded-2xl rounded-tr-xs px-2.5 py-1.5 shadow-2xs text-[13px] leading-snug break-words';
-
-        var outText = document.createElement('p');
-        outText.className = 'whitespace-pre-wrap';
-        outText.textContent = item.text || '';
-
-        var outMeta = document.createElement('div');
-        outMeta.className = 'flex items-center justify-end gap-1 mt-0.5 text-[10px] text-[#667781]';
-        outMeta.innerHTML = '<span>' + formatTime(item.ts) + '</span>' +
-          '<svg class="w-3.5 h-3.5 text-[#53bdeb]" viewBox="0 0 16 11" fill="currentColor"><path d="M11.071.653a.457.457 0 0 0-.304-.102.493.493 0 0 0-.381.178l-6.19 7.636-2.405-2.272a.463.463 0 0 0-.336-.146.47.47 0 0 0-.343.146l-.311.31a.445.445 0 0 0-.14.337c0 .136.047.25.14.343l2.996 2.996a.724.724 0 0 0 .501.203.697.697 0 0 0 .546-.266l6.646-8.417a.497.497 0 0 0 .108-.299.441.441 0 0 0-.19-.374l-.337-.273zm3.636 0a.457.457 0 0 0-.304-.102.493.493 0 0 0-.381.178l-6.19 7.636-1.2-1.134-.635.783 1.491 1.491a.724.724 0 0 0 .501.203.697.697 0 0 0 .546-.266l6.646-8.417a.497.497 0 0 0 .108-.299.441.441 0 0 0-.19-.374l-.392-.299z"/></svg>';
-
-        outBubble.appendChild(outText);
-        outBubble.appendChild(outMeta);
-        outWrap.appendChild(outBubble);
-        chatFeed.appendChild(outWrap);
-        return;
-      }
-
-      // Caso 2: Estado de entrega (píldora centrada minimalista)
-      if (item.status && !item.message) {
-        var stWrap = document.createElement('div');
-        stWrap.className = 'flex justify-center my-0.5';
-        var stPill = document.createElement('span');
-        stPill.className = 'bg-white/80 text-[#54656f] text-[10px] px-2.5 py-0.5 rounded-full shadow-2xs';
-        var stLabel = item.status.status || 'actualizado';
-        stPill.textContent = 'Estado: ' + stLabel;
-        stWrap.appendChild(stPill);
-        chatFeed.appendChild(stWrap);
-        return;
-      }
-
-      // Caso 3: Mensaje entrante (burbuja blanca izquierda)
-      var message = item.message || item;
-      var inWrap = document.createElement('div');
-      inWrap.className = 'flex justify-start';
-
-      var inBubble = document.createElement('div');
-      inBubble.className = 'max-w-[85%] bg-white text-[#111b21] rounded-2xl rounded-tl-xs px-2.5 py-1.5 shadow-2xs text-[13px] leading-snug break-words';
-
-      // Mostrar remitente solo si es distinto al actual
-      if (message.from) {
-        var senderTag = document.createElement('div');
-        senderTag.className = 'text-[10px] font-semibold text-[#008069] mb-0.5 truncate';
-        senderTag.textContent = message.from;
-        inBubble.appendChild(senderTag);
-      }
-
-      var inText = document.createElement('p');
-      inText.className = 'whitespace-pre-wrap';
-      inText.textContent = (message.text && message.text.body) ||
-        (typeof message === 'string' ? message : JSON.stringify(message));
-
-      var tsVal = message.timestamp ? Number(message.timestamp) * 1000 : item.ts;
-      var inMeta = document.createElement('div');
-      inMeta.className = 'text-right mt-0.5 text-[10px] text-[#667781]';
-      inMeta.textContent = formatTime(tsVal);
-
-      inBubble.appendChild(inText);
-      inBubble.appendChild(inMeta);
-      inWrap.appendChild(inBubble);
-      chatFeed.appendChild(inWrap);
-    });
-
-    scrollToBottom();
-  }
-
-  // Consultar /api/updates y acumular mensajes nuevos
-  function loadUpdates() {
-    refreshBtn.disabled = true;
-    refreshIcon.classList.add('animate-spin');
-    connectionStatus.textContent = 'sincronizando…';
-
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', '/api/updates', true);
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState !== 4) return;
-      refreshBtn.disabled = false;
-      refreshIcon.classList.remove('animate-spin');
-
-      var data = {};
-      try { data = JSON.parse(xhr.responseText); } catch (ignore) {}
-      var saved = loadSaved();
-
-      if (xhr.status < 200 || xhr.status >= 300) {
-        connectionStatus.textContent = 'sin conexión con API';
-        renderChat(saved);
-        return;
-      }
-
-      connectionStatus.textContent = 'en línea · listo';
-      var fresh = extractItems(data);
-      var seen = {};
-      var statuses = [];
-
-      saved.forEach(function (i) {
-        if (i.message && i.message.id) seen[i.message.id] = 1;
-      });
-
-      fresh.forEach(function (i) {
-        if (i.message) {
-          var id = i.message.id;
-          if (id && seen[id]) return;
-          if (id) seen[id] = 1;
-          i.direction = 'in';
-          i.ts = i.message.timestamp ? Number(i.message.timestamp) * 1000 : Date.now();
-          saved.push(i);
-        } else if (i.status) {
-          statuses.push(i);
-        }
-      });
-
-      saveAll(saved);
-      renderChat(saved.concat(statuses));
-    };
-
-    xhr.onerror = function () {
-      refreshBtn.disabled = false;
-      refreshIcon.classList.remove('animate-spin');
-      connectionStatus.textContent = 'modo local (offline)';
-      renderChat(loadSaved());
-    };
-
-    xhr.send();
-  }
-
-  // Eventos de UI para editar destinatario
-  toggleRecipientBtn.onclick = function () {
-    recipientDrawer.classList.toggle('hidden');
-    if (!recipientDrawer.classList.contains('hidden')) {
-      toInput.focus();
-      toInput.select();
-    }
-  };
-
-  saveRecipientBtn.onclick = function () {
-    var normalized = normalizeRecipient(toInput.value);
-    if (!/^(?:\d{8,15}|user:\d{1,30})$/.test(normalized)) {
-      showToast('Usa user:ID o un número con código de país.', true);
-      return;
-    }
-    toInput.value = normalized;
-    headerRecipient.textContent = normalized;
-    try { localStorage.setItem(RECIPIENT_KEY, normalized); } catch (e) {}
-    recipientDrawer.classList.add('hidden');
-    renderChat(loadSaved());
-    showToast('Destinatario actualizado', false);
-  };
-
-  // Botones de actualizar y borrar historial sin confirm() nativo
-  refreshBtn.onclick = loadUpdates;
-
-  clearBtn.onclick = function () {
-    confirmBar.classList.remove('hidden');
-  };
-
-  confirmNo.onclick = function () {
-    confirmBar.classList.add('hidden');
-  };
-
-  confirmYes.onclick = function () {
-    confirmBar.classList.add('hidden');
-    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-    renderChat([]);
-    showToast('Historial borrado', false);
-  };
-
-  // Enviar mensaje con Enter (Shift+Enter para salto de línea)
-  msgInput.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      if (msgInput.value.trim()) {
-        form.dispatchEvent(new Event('submit', { cancelable: true }));
-      }
-    }
-  });
-
-  // Auto-altura de textarea en navegadores sin field-sizing
-  msgInput.addEventListener('input', function () {
-    this.style.height = 'auto';
-    this.style.height = Math.min(this.scrollHeight, 96) + 'px';
-  });
-
-  // Envío del formulario a /api/send
-  form.onsubmit = function (e) {
-    if (e && e.preventDefault) e.preventDefault();
-
-    var to = normalizeRecipient(toInput.value);
-    var message = msgInput.value.trim();
-    if (!message) return false;
-
-    if (!/^(?:\d{8,15}|user:\d{1,30})$/.test(to)) {
-      showToast('Destinatario inválido. Revisa el ID.', true);
-      recipientDrawer.classList.remove('hidden');
-      return false;
-    }
-
-    toInput.value = to;
-    headerRecipient.textContent = to;
-    submitBtn.disabled = true;
-
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/send', true);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState !== 4) return;
-      submitBtn.disabled = false;
-
-      var data = {};
-      try { data = JSON.parse(xhr.responseText); } catch (ignore) {}
-
-      if (xhr.status >= 200 && xhr.status < 300) {
-        // Agregar inmediatamente la burbuja enviada al chat
-        var saved = loadSaved();
-        saved.push({
-          direction: 'out',
-          to: to,
-          text: message,
-          ts: Date.now()
-        });
-        saveAll(saved);
-        renderChat(saved);
-
-        msgInput.value = '';
-        msgInput.style.height = 'auto';
-        msgInput.focus();
-      } else {
-        showToast(data.error || 'No se pudo enviar. Revisa la API.', true);
-      }
-    };
-
-    xhr.onerror = function () {
-      submitBtn.disabled = false;
-      showToast('Error de red al enviar el mensaje.', true);
-    };
-
-    xhr.send(JSON.stringify({ to: to, message: message }));
-    return false;
-  };
-
-  // Inicialización
-  initRecipient();
-  renderChat(loadSaved());
-  loadUpdates();
+ form.onsubmit=function(e){
+   if(e&&e.preventDefault)e.preventDefault();
+   var to=document.getElementById('to').value.trim(), message=document.getElementById('message').value;
+   if(/^\d{8,15}$/.test(to.replace(/[ +()\-]/g,'')))to=to.replace(/[ +()\-]/g,'');
+   if(!/^(?:\d{8,15}|user:\d{1,30})$/.test(to)){show('Revisa el destinatario. Usa un número con código de país o el formato user:ID.','error');return false;}
+   button.disabled=true;button.innerHTML='Enviando…';status.className='status';
+   var xhr=new XMLHttpRequest();xhr.open('POST','/api/send',true);xhr.setRequestHeader('Content-Type','application/json');
+   xhr.onreadystatechange=function(){if(xhr.readyState!==4)return;button.disabled=false;button.innerHTML='Enviar mensaje';var data={};try{data=JSON.parse(xhr.responseText);}catch(ignore){}
+     if(xhr.status>=200&&xhr.status<300)show('Solicitud enviada. '+(data.message||''),'ok');else show(data.error||'No se pudo enviar. Revisa la configuración de la API.','error');};
+   xhr.onerror=function(){button.disabled=false;button.innerHTML='Enviar mensaje';show('No se pudo conectar. Comprueba tu conexión e inténtalo otra vez.','error');};
+   xhr.send(JSON.stringify({to:to,message:message}));return false;
+ };
 }());
 </script>
-</body>
-</html>
+</body></html>
