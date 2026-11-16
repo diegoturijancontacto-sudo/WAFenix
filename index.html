@@ -13,7 +13,7 @@
     input,textarea{box-sizing:border-box;width:100%;font:16px Arial,sans-serif;padding:12px;border:1px solid #aebfb7;border-radius:5px;background:#fff;color:#18332b}
     textarea{height:120px;resize:vertical}button{margin-top:18px;background:#087e58;color:white;border:0;border-radius:5px;padding:13px 18px;font-size:16px;font-weight:bold;width:100%;cursor:pointer}
     button:disabled{background:#78958a}.hint{font-size:13px;color:#64766e;line-height:1.5}.status{padding:12px;margin-top:14px;border-radius:5px;display:none;line-height:1.4}.ok{display:block;background:#e4f5eb;color:#185c37}.error{display:block;background:#fff0ed;color:#8c2e21}
-    .updates{margin-top:26px;border-top:1px solid #d8e5df;padding-top:18px}.updates-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.updates h2{font-size:19px;margin:0}.updates button{width:auto;margin:0;padding:9px 12px;font-size:14px}.updates-state{color:#64766e;font-size:14px;margin:12px 0}.update-item{border:1px solid #d8e5df;border-radius:6px;padding:12px;margin-top:10px}.update-item strong{display:block;margin-bottom:6px}.update-item pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px monospace;margin:0;color:#526860}
+    .updates{margin-top:26px;border-top:1px solid #d8e5df;padding-top:18px}.updates-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.updates h2{font-size:19px;margin:0}.updates-actions{display:flex;gap:8px}.updates button{width:auto;margin:0;padding:9px 12px;font-size:14px}.updates button.secondary{background:#fff;color:#8c2e21;border:1px solid #d8b5ae}.updates-state{color:#64766e;font-size:14px;margin:12px 0}.update-item{border:1px solid #d8e5df;border-radius:6px;padding:12px;margin-top:10px}.update-item.new{border-color:#087e58;background:#f3fbf7}.update-item strong{display:block;margin-bottom:6px}.update-item pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px monospace;margin:0;color:#526860}
   </style>
 </head>
 <body><div class="wrap"><main class="card">
@@ -29,7 +29,13 @@
     <div id="status" class="status" role="status"></div>
   </form>
   <section class="updates" aria-labelledby="updates-title">
-    <div class="updates-head"><h2 id="updates-title">Actualizaciones recientes</h2><button id="refresh-updates" type="button">Actualizar</button></div>
+    <div class="updates-head">
+      <h2 id="updates-title">Actualizaciones recientes</h2>
+      <div class="updates-actions">
+        <button id="refresh-updates" type="button">Actualizar</button>
+        <button id="clear-updates" type="button" class="secondary">Borrar</button>
+      </div>
+    </div>
     <p id="updates-state" class="updates-state" role="status">Cargando mensajes…</p>
     <div id="updates-list" aria-live="polite"></div>
   </section>
@@ -37,42 +43,97 @@
 <script>
 (function(){
  var form=document.getElementById('send-form'), button=document.getElementById('submit'), status=document.getElementById('status');
- var updatesState=document.getElementById('updates-state'), updatesList=document.getElementById('updates-list'), refreshButton=document.getElementById('refresh-updates');
+ var updatesState=document.getElementById('updates-state'), updatesList=document.getElementById('updates-list');
+ var refreshButton=document.getElementById('refresh-updates'), clearButton=document.getElementById('clear-updates');
+ var KEY='wa_inbox_v1', MAX=100;
+
  function show(text,kind){status.className='status '+kind;status.textContent=text;}
+
+ // La API solo devuelve mensajes NUEVOS (consume el offset), así que
+ // los acumulamos aquí en el navegador para no perderlos.
+ function loadSaved(){try{var s=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(s)?s:[];}catch(e){return [];}}
+ function saveAll(list){try{localStorage.setItem(KEY,JSON.stringify(list.slice(-MAX)));}catch(e){}}
+
+ function extractItems(data){
+   var items=Array.isArray(data)?data:(data.updates||data.messages||data.data||[]);
+   if(!Array.isArray(items)){items=[items];}
+   if(!Array.isArray(data)&&Array.isArray(data.entry)){
+     items=[];
+     data.entry.forEach(function(entry){(entry.changes||[]).forEach(function(change){
+       var value=change.value||{};
+       (value.messages||[]).forEach(function(m){items.push({kind:'Mensaje',message:m,contact:(value.contacts||[])[0]||{}});});
+       (value.statuses||[]).forEach(function(s){items.push({kind:'Estado',status:s});});
+     });});
+   }
+   return items;
+ }
+
+ function render(list,newIds){
+   updatesList.textContent='';
+   if(!list.length){updatesState.textContent='No hay mensajes recientes.';return;}
+   updatesState.textContent=list.length+' actualización'+(list.length===1?'':'es')+'.';
+   list.forEach(function(item,index){
+     var article=document.createElement('article');
+     var message=item&&item.message, st=item&&item.status;
+     article.className='update-item'+(message&&newIds[message.id]?' new':'');
+     var title=document.createElement('strong');
+     var kind=(item&&item.kind)||(message?'Mensaje':'')||(st?'Estado':'')||(item&&(item.type||item.event||item.status))||('Actualización '+(index+1));
+     title.textContent=String(kind)+(message&&message.from?' · '+message.from:'')+(st&&st.recipient_id?' · '+st.recipient_id:'');
+     var details=document.createElement('pre');
+     if(message){
+       details.textContent=(message.text&&message.text.body)||JSON.stringify(message,null,2);
+       if(message.timestamp)details.textContent+='\n'+new Date(Number(message.timestamp)*1000).toLocaleString();
+     }else if(st){details.textContent=JSON.stringify(st,null,2);}
+     else{details.textContent=JSON.stringify(item,null,2);}
+     article.appendChild(title);article.appendChild(details);updatesList.appendChild(article);
+   });
+ }
+
  function loadUpdates(){
    refreshButton.disabled=true;updatesState.textContent='Cargando mensajes…';
    var xhr=new XMLHttpRequest();xhr.open('GET','/api/updates',true);
-   xhr.onreadystatechange=function(){if(xhr.readyState!==4)return;refreshButton.disabled=false;var data={};try{data=JSON.parse(xhr.responseText);}catch(ignore){}
-     if(xhr.status<200||xhr.status>=300){updatesState.textContent=data.error||'No se pudieron cargar los mensajes.';return;}
-     var items=Array.isArray(data)?data:(data.updates||data.messages||data.data||[]);
-     if(!Array.isArray(items)){items=[items];}
-     // WhatsApp Agent también devuelve el formato webhook: entry[].changes[].value.
-     if(!Array.isArray(data)&&Array.isArray(data.entry)){
-       items=[];
-       data.entry.forEach(function(entry){(entry.changes||[]).forEach(function(change){
-         var value=change.value||{};
-         (value.messages||[]).forEach(function(message){items.push({kind:'Mensaje',message:message,contact:(value.contacts||[])[0]||{}});});
-         (value.statuses||[]).forEach(function(status){items.push({kind:'Estado',status:status});});
-       });});
+   xhr.onreadystatechange=function(){
+     if(xhr.readyState!==4)return;
+     refreshButton.disabled=false;
+     var data={};try{data=JSON.parse(xhr.responseText);}catch(ignore){}
+     var saved=loadSaved();
+     if(xhr.status<200||xhr.status>=300){
+       render(saved,{});
+       updatesState.textContent=(data.error||'No se pudieron cargar los mensajes nuevos.')+(saved.length?' Mostrando el historial guardado.':'');
+       return;
      }
-     updatesList.textContent='';
-     if(!items.length){updatesState.textContent='No hay mensajes recientes.';return;}
-     updatesState.textContent=items.length+' actualización'+(items.length===1?'':'es')+'.';
-     items.forEach(function(item,index){var article=document.createElement('article');article.className='update-item';var title=document.createElement('strong');
-       var message=item&&item.message, status=item&&item.status;
-       var kind=(item&&item.kind)||(message?'Mensaje':'')||(status?'Estado':'')||(item&& (item.type||item.event||item.status))||('Actualización '+(index+1));
-       title.textContent=String(kind)+(message&&message.from?' · '+message.from:'')+(status&&status.recipient_id?' · '+status.recipient_id:'');
-       var details=document.createElement('pre');
-       if(message){details.textContent=(message.text&&message.text.body)||JSON.stringify(message,null,2);if(message.timestamp)details.textContent+='\n'+new Date(Number(message.timestamp)*1000).toLocaleString();}
-       else if(status){details.textContent=JSON.stringify(status,null,2);}
-       else{details.textContent=JSON.stringify(item,null,2);}
-       article.appendChild(title);article.appendChild(details);updatesList.appendChild(article);
+     var fresh=extractItems(data), newIds={}, seen={}, statuses=[];
+     saved.forEach(function(i){if(i.message&&i.message.id)seen[i.message.id]=1;});
+     fresh.forEach(function(i){
+       if(i.message){
+         var id=i.message.id;
+         if(id&&seen[id])return;
+         if(id){seen[id]=1;newIds[id]=1;}
+         saved.push(i);
+       }else if(i.status){statuses.push(i);}
      });
+     saveAll(saved);
+     // más recientes primero; los estados de esta consulta van arriba sin guardarse
+     var list=statuses.concat(saved.slice().reverse());
+     render(list,newIds);
    };
-   xhr.onerror=function(){refreshButton.disabled=false;updatesState.textContent='No se pudieron cargar los mensajes. Comprueba la conexión e inténtalo de nuevo.';};xhr.send();
+   xhr.onerror=function(){
+     refreshButton.disabled=false;
+     var saved=loadSaved();
+     render(saved,{});
+     updatesState.textContent='No se pudieron cargar los mensajes. Comprueba la conexión e inténtalo de nuevo.'+(saved.length?' Mostrando el historial guardado.':'');
+   };
+   xhr.send();
  }
+
  refreshButton.onclick=loadUpdates;
+ clearButton.onclick=function(){
+   if(!confirm('¿Borrar el historial guardado en este navegador?'))return;
+   try{localStorage.removeItem(KEY);}catch(e){}
+   render([],{});
+ };
  loadUpdates();
+
  form.onsubmit=function(e){
    if(e&&e.preventDefault)e.preventDefault();
    var to=document.getElementById('to').value.trim(), message=document.getElementById('message').value;
